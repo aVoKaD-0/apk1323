@@ -16,7 +16,11 @@ class MainApp(App, backend):
         self.lbl.text = self.formula
 
     def add_numbers(self, instance):
-        self.formula += str(instance.text)
+        if (str(instance.text) == "√"):
+            self.formula += "#"
+        else:
+            self.formula += str(instance.text)
+        print(str(instance.text))
         self.update_label()
 
     def add_result(self, instance):
