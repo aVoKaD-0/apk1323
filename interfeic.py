@@ -4,7 +4,90 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
-from math import sqrt
+import math
+
+ch = 1 # Если число с плавающей надо проверить снова, переменная меняется на 2 и число не проверяется на sqrt, используется в f вынос целого и не целого числа
+
+def vynos_celogo_chisla(number): # выносит целое число
+    global ch
+    number2 = math.sqrt(number)
+    if str(number2).find(".") == len(str(number2))-2 and ch == 1:
+        ch = 1
+        return int(str(number2)[:-2]), 0
+    for i in range(1, number+1):
+        for k in range(1, number):
+            if i*k == number:
+                for l in range(1, k):
+                    if l*l == k:
+                        ch = 1
+                        return l, i
+    ch = 1
+    return 0, 0
+def vynos_NeCelogo_chisla(number): # выносит не целое число
+    number2 = number
+    decrease = "1"
+    global ch
+    for i in range(len(str(number2))-1, 0, -1):
+        if str(number2)[i] == "e":
+            decrease += "0"*int(str(number2)[i+2:])
+            break
+    number2 *= float(decrease)
+    decrease = 1/int(decrease)
+    dlina = len(str(number2)[(str(number2).find("."))+1:])
+    while str(number2)[-1] != "0" or str(number2)[-2] != ".":
+        number2 *= 10
+        decrease /= 10
+        dlina -= 1
+        number2 = round(number2, dlina)
+    number3, number4 = vynos_celogo_chisla(int(number2))
+    if number4 == 0 and number3 != 0:
+        if len(str(number)[str(number).find(".")+1:])%2 == 0:
+            number3 /= int("1"+("0"*((len(str(decrease))-1)//2)))
+        else:
+            ch = 2
+            number3, number4 = vynos_celogo_chisla(int(number2))
+    if number4 != 0 and number3 != 0:
+        flag = True
+        for t in range(0, len(str(decrease))): # Смотрим длину после точки у первого числа
+            for i in range(0, len(str(decrease))): # Смотрим длину после точки у второго числа
+                if round(round(((number3/int("1"+"0"*t))**2), t*2)*round((number4/int("1"+"0"*i)), i*2), i*2+t*2) == number:
+                    number3 = number3/int("1"+"0"*t)
+                    number4 = number4/int("1"+"0"*i)
+                    if i == 0:
+                        number4 = int(number4)
+                    if t == 0:
+                        number3 = int(number3)
+                    flag = False
+                    break
+            if flag == False:
+                break
+        if flag == True:
+            number3, number4 = 0, 0
+    return number3, number4
+def proverka_dlin_chisla(number):
+    flag = True
+    number = str(number)
+    tochka = str(number).find(".")
+    for t in range(tochka+2, len(str(number[tochka+1:]))): # Смотрим длину после точки у первого числа
+        if t != len(number)-2:
+            if  number[t+1] == number[t]:
+                for i in range(t+2, len(str(number[tochka+1:]))):
+                    if number[i] == number[t+2]:
+                        if i-t >= 3:
+                            if int(number[t+2]) > 5:
+                                number = number[:t-1]+str(int(number[t-1])+1)
+                                flag = False
+                            else:
+                                number = number[:t]
+                                flag = False
+                            break
+                    else:
+                        break
+        if flag == False:
+            break
+    if number[-1] == "0" and number[-2] == ".":
+        number = number[:-2]
+    return number
 
 class MainApp(App):
     def update_label(self):
@@ -12,13 +95,17 @@ class MainApp(App):
 
     def add_numbers(self, instance):
         if (str(instance.text) == "√"):
-            self.formula += "#"
+            self.formula += "√"
         else:
             self.formula += str(instance.text)
         self.update_label()
 
     def add_result(self, instance):
-        self.lbl.text = self.osnova()
+        self.lbl.text = self.VynosIzPodKoren()
+        self.formula = ""
+
+    def add_res(self, instance):
+        self.lbl.text = self.VnosPodKoren()
         self.formula = ""
 
     def add_del(self, instance):
@@ -30,12 +117,15 @@ class MainApp(App):
         self.formula = ""
         self.lbl.text = self.formula
 
+    def add_znak(self, instance):
+        self.lbl.text = "Скоро всё будет;)"
+
     def build(self):
         self.formula = ""
         bl = BoxLayout(orientation = "vertical", padding = 25)
         gl = GridLayout(cols = 4, spacing = 3, size_hint = (1, .6))
 
-        self.lbl = Label(text="0", font_size = 40, size_hint = (1, .4))
+        self.lbl = Label(text="Что сделаем на этот раз?", font_size = 40, size_hint = (1, .4))
 
         bl.add_widget( self.lbl )
 
@@ -47,1256 +137,241 @@ class MainApp(App):
         gl.add_widget(Button(text="7", on_press = self.add_numbers))
         gl.add_widget(Button(text="8", on_press = self.add_numbers))
         gl.add_widget(Button(text="9", on_press = self.add_numbers))
-        gl.add_widget(Button(text="*", on_press = self.add_numbers))
+        gl.add_widget(Button(text="*", on_press = self.add_znak))
 
         gl.add_widget(Button(text="4", on_press = self.add_numbers))
         gl.add_widget(Button(text="5", on_press = self.add_numbers))
         gl.add_widget(Button(text="6", on_press = self.add_numbers))
-        gl.add_widget(Button(text="-", on_press = self.add_numbers))
+        gl.add_widget(Button(text="-", on_press = self.add_znak))
 
         gl.add_widget(Button(text="1", on_press = self.add_numbers))
         gl.add_widget(Button(text="2", on_press = self.add_numbers))
         gl.add_widget(Button(text="3", on_press = self.add_numbers))
-        gl.add_widget(Button(text="+", on_press = self.add_numbers))
+        gl.add_widget(Button(text="+", on_press = self.add_znak))
 
-        gl.add_widget(Widget())
+        gl.add_widget(Button(text = "внести под корень", on_press = self.add_res))
         gl.add_widget(Button(text = "0", on_press = self.add_numbers))
         gl.add_widget(Button(text = ".", on_press = self.add_numbers))
-        gl.add_widget(Button(text = "=", on_press = self.add_result))
+        gl.add_widget(Button(text = "вынести из под корня", on_press = self.add_result))
 
         bl.add_widget(gl)
 
         return bl
 
-
-
-
-    def osnova(self):
-        def kdlT(h):
-            c = 0
-            for i in range(1, h):
-                for k in range(1, h+1):
-                    if i*i == h:
-                        c += 1
-                        return i
-                    elif i*k == h:
-                        for t in range(1, k):
-                            if t*t == k:
-                                c += 1
-                                return t
-            if c == 0:
-                return 0
-        def kdlTr(h):
-            for i in range(1, h):
-                for k in range(1, h+1):
-                    if i*i == h:
-                        return i
-                    elif i*k == h:
-                        for t in range(1, k):
-                            if t*t == k:
-                                return i
-        def kdlF(b, w, s):
-            p = int(s/2)
-            i = str("0.")
-            k = str("0.")
-            if w == "0":
-                for l in range(1, p+1):
-                    i += "0"
-                    if l != p:
-                        k += "0"
+    def VynosIzPodKoren(koren): #внос их под корня
+        c = 0 # проверка правильно ли стоит знак корня в строке
+        f = 0 # проверка правильно ли стоит знак деления
+        g = 0 # проверка правильно ли стоят числа с плавающей запятой
+        f2 = 0 # проверка не стоит ли знак деления в конце или в начале
+        g2 = 0 # проверка не стоит ли точка в конце или в начале  
+        c2 = 0 # проверка не стоит ли знак корня в конце 
+        for i in range(0, len(koren)-1):
+            if koren[i] == "√":
+                c += 1
+            if koren[i] == "/":
+                f += 1
+            if koren[i] == ".":
+                g += 1
+            if koren[i] == "√" and i == len(koren):
+                c2 += 1
+            if koren[i] == "." and (i != 0 and i != len(koren)-1) and koren[i-1].isdigit() and koren[i+1].isdigit():
+                g2 += 1
+            if koren[i] == "/" and (i != 0 and i != len(koren)-1) and koren[i-1].isdigit() and koren[i+1].isdigit():
+                f2 += 1
+        if g > 4 or c != 1 or f > 2 or f != f2 or g != g2 or c2 != 0:
+            return "Некорректный ввод"
+        elif len(koren) == 1:
+            return "Некорректный ввод"
+        else:
+            a = str(koren).find("√")
+            NeKPL = True # проверяет есть ли число с плавающей запятой вне корня
+            KPL = True # проверяет есть ли число с плавающей запятой под корнем
+            KDR = True # проверяет есть ли дробь под корняем
+            NeKDR = True # проверяет есть ли дробь вне корня
+            Drob_Ne = 0
+            Drob_V = 0
+            for i in range(a+1, len(koren)):
+                if koren[i] == ".":
+                    KPL = False  
+            for i in range(a):
+                if koren[i] ==".":
+                    NeKPL = False
+            for i in range(a+1, len(koren)):
+                if koren[i] == "/":
+                    KDR = False
+                    Drob_V = i
+            for i in range(a):
+                if koren[i] == "/":
+                    NeKDR = False
+                    Drob_Ne = i
+            if KDR == True and (KPL == True or KPL == False):
+                if str(koren[a+1:]).find(".") == -1:
+                    number, number2 = vynos_celogo_chisla(int(koren[a+1:]))
+                else:
+                    number, number2 = vynos_NeCelogo_chisla(float(koren[a+1:]))
+                if NeKDR == True and (NeKPL == True and NeKPL == False): # если вне корня либо целое число, либо числа нету
+                    if number == 0 and number2 == 0: 
+                        return f"Число {koren} иррациональное"
                     else:
-                        k += "1"
+                        if a != 0:
+                            if str(koren[:a]).isdigit() == True: # если число вне корня целое
+                                numerator = proverka_dlin_chisla(float(number*int(koren[:a])))
+                            else: # если число вне корня не целое
+                                if str(number*float(koren[:a]))[-1] == "0" and str(number*float(koren[:a]))[-2] == ".":
+                                    numerator = str(number*float(koren[:a]))[:-2]
+                                else:
+                                    numerator = proverka_dlin_chisla(float(number*float(koren[:a])))
+                        else:
+                            numerator = number
+                        if number2 == 0: # если вне дроби есть число и число расскладывается нацело
+                            return f"{numerator}"
+                        elif number2 != 0: # если вне дроби есть число и число расскладывается нацело
+                            return f"{numerator}√{number2}"
+                        else:
+                            if number2 == 0:
+                                return f"{number}"
+                            else:
+                                return f"{number}√{number2}"
+                elif NeKDR == False and (NeKPL == True or NeKPL == False): # если вне корня дробь
+                    if number == 0 and number2 == 0:
+                        return f"Число {koren} иррациональное"
+                    else:
+                        if str(koren[:Drob_Ne]).isdigit() == True: # если число вне корня целое
+                            numerator = proverka_dlin_chisla(float(number*int(koren[:Drob_Ne])))
+                        else: # если число вне корня не целое
+                            if str(number*float(koren[:Drob_Ne]))[-1] == "0" and str(number*float(koren[:Drob_Ne]))[-2] == ".":
+                                numerator = str(number*float(koren[:Drob_Ne]))[:-2]
+                            else:
+                                numerator = proverka_dlin_chisla(float(number*float(koren[:Drob_Ne])))
+                        if koren[:a] != "" and number2 == 0: # если вне дроби нету числа и число расскладывается нацело
+                            return f"{numerator}/{koren[Drob_Ne+1:a]}"
+                        elif koren[:a] != "" and number2 != 0 : # если вне дроби есть число и число расскладывается нацело
+                            return f"{numerator}√{number2}/{koren[Drob_Ne+1:a]}"
+            elif KDR == False and (KPL == False or KPL == True):
+                if koren[a+1:Drob_V].find(".") == -1:
+                    number, number2 = vynos_celogo_chisla(int(koren[a+1:Drob_V]))
+                else:
+                    number, number2 = vynos_NeCelogo_chisla(float(koren[a+1:Drob_V]))
+                if koren[Drob_V+1:].find(".") == -1:
+                    number3, number4 = vynos_celogo_chisla(int(koren[Drob_V+1:]))
+                else:
+                    number3, number4 = vynos_NeCelogo_chisla(float(koren[Drob_V+1:]))
+                if NeKDR == True and (NeKPL == True or NeKPL == False):  # если вне корня либо целое число, либо числа нету
+                    if (number == 0 and number2 == 0) or (number3 == 0 and number4 == 0):
+                        return f"Число {koren} иррациональное"
+                    else:
+                        if a != 0:
+                            if str(koren[:a]).isdigit() == True: # если число вне корня целое
+                                numerator = proverka_dlin_chisla(float(number*int(koren[:a])))
+                            else: # если число вне корня не целое
+                                if str(number*float(koren[:a]))[-1] == "0" and str(number*float(koren[:a]))[-2] == ".":
+                                    numerator = str(number*float(koren[:a]))[:-2]
+                                else:
+                                    numerator = proverka_dlin_chisla(float(number*float(koren[:a])))
+                        else:
+                            numerator = number
+                        if number2 == 0 and number4 == 0: # если исло расскладывается нацело и знаменатель расскадывается нацело
+                            return f"{numerator}/{number3}" 
+                        elif number2 == 0 and number4 != 0: # если число расскладывается нацело, но знаменатель расскадывается не нацело
+                            return f"{numerator}/{number3}√{number4}" 
+                        elif number2 != 0 and number4 == 0: # если число расскладывается нацело, но знаменатель расскадывается нацело
+                            return f"{numerator}√{number2}/{number3}"
+                        elif number2 != 0 and number4 != 0: # если число расскладывается нацело и знаменатель расскадывается не нацело
+                            return f"{numerator}√{number2}/{number3}√{number4}"
+                elif NeKDR == False and (NeKPL == False or NeKPL == True): # если вне корня либо дробь с целыми числами, либо дробь с числа с плавающей запятой, либо смешаная дробь
+                    if (number == 0 and number2 == 0) or (number3 == 0 and number4 == 0):
+                        return f"Число {koren} иррациональное"
+                    else:
+                        if str(koren[:Drob_Ne]).isdigit() == True: # если число вне корня целое
+                            numerator = proverka_dlin_chisla(float(number*int(koren[:Drob_Ne])))
+                        else: # если число вне корня не целое
+                            if str(number*float(koren[:Drob_Ne]))[-1] == "0" and str(number*float(koren[:Drob_Ne]))[-2] == ".":
+                                numerator = str(number*float(koren[:Drob_Ne]))[:-2]
+                            else:
+                                numerator = proverka_dlin_chisla(float(number*float(koren[:Drob_Ne])))
+                        if str(koren[Drob_Ne+1:a]).isdigit() == True: # если число в корне целое
+                            denominator = proverka_dlin_chisla(float(number3*int(koren[Drob_Ne+1:a])))
+                        else: # если число в корне не целое
+                            if str(number3*float(koren[Drob_Ne+1:a]))[-1] == "0" and str(number3*float(koren[Drob_Ne+1:a]))[-2] == ".":
+                                denominator = str(number3*float(koren[Drob_Ne+1:a]))[:-2]
+                            else:
+                                denominator = proverka_dlin_chisla(float(number3*float(koren[Drob_Ne+1:a])))
+                        if number2 == 0 and number4 == 0: # если число расскладывается нацело и знаменатель расскадывается нацело
+                            return f"{numerator}/{denominator}" 
+                        elif number2 == 0 and number4 != 0: # если число расскладывается нацело, но знаменатель расскадывается не нацело
+                            return f"{numerator}/{denominator}√{number4}" 
+                        elif number2 != 0 and number4 == 0: # если число расскладывается нацело, но знаменатель расскадывается нацело
+                            return f"{numerator}√{number2}/{denominator}"
+                        elif number2 != 0 and number4 != 0: # если число расскладывается нацело и знаменатель расскадывается не нацело
+                            return f"{numerator}√{number2}/{denominator}√{number4}"
+    
+    def VnosPodKoren(koren):
+        c = 0
+        f = 0
+        g = 0
+        f2 = 0
+        g2 = 0
+        c2 = 0
+        for i in range(0, len(koren)-1):
+            if koren[i] == "√":
+                c += 1
+            if koren[i] == "/":
+                f += 1
+            if koren[i] == ".":
+                g += 1
+            if koren[i] == "√" and i == 0:
+                c2 += 1
+            if koren[i] == "." and (i != 0 and i != len(koren)-1) and koren[i-1].isdigit() and koren[i+1].isdigit():
+                g2 += 1
+            if koren[i] == "/" and (i != 0 and i != len(koren)-1) and koren[i-1].isdigit() and koren[i+1].isdigit():
+                f2 += 1
+        if koren[len(koren)-1] == "√":
+            c += 1
+        if g > 4 or c != 1 or f > 2 or f != f2 or g != g2 or c2 != 0:
+            return "Некорректный ввод"
+        elif len(koren) == 1:
+            return "Некорректный ввод"
+        else:
+            a = str(koren).find("√")
+            Drob_Ne = a
+            Drob_V = len(koren)
+            number2 = 0
+            for i in range(a+1, len(koren)):
+                if koren[i] == "/":
+                    Drob_V = i
+            for i in range(a):
+                if koren[i] == "/":
+                    Drob_Ne = i
+            if str(koren[:Drob_Ne]).isdigit() == True:
+                number = int(koren[:Drob_Ne])**2
             else:
-                k = "0.1"
-                i = "0.0"
-                p = 1
-            k = float(k)
-            i = float(i)
-            i += k
-            c = i*i
-            c = round(c, s)
-            while c < b:
-                i += k
-                i = round(i, p)
-                c = i*i
-                c = round(c, s+1)
-            if c == b:
-                return i
+                number = float(koren[:Drob_Ne])**2
+            if Drob_Ne != a:
+                if str(koren[Drob_Ne+1:a]).isdigit() == True:
+                    number2 = int(koren[Drob_Ne+1:a])**2
+                else:
+                    number2 = float(koren[Drob_Ne+1:a])**2
+            if str(koren[a+1:Drob_V]).isdigit() == True:
+                number *= int(koren[a+1:Drob_V])
             else:
-                cout = 0
-                for i in range(s):
-                    cout += 1
-                cout2 = cout
-                while cout != 0:
-                    b *= 10
-                    cout -= 1
-                b = int(b)
-                for i in range(1, b+1):
-                    for k in range(1, b+1):
-                        if i*k == b:
-                            if i == k:
-                                return k
-                            else:
-                                for l in range(1, k):
-                                    if l*l == k:
-                                        return l
-        def kdlFl(b, w, s):
-            p = int(s/2)
-            i = str("0.")
-            k = str("0.")
-            if w == "0":
-                for l in range(1, p+1):
-                    i += "0"
-                    if l != p:
-                        k += "0"
-                    else:
-                        k += "1"
+                number *= float(koren[a+1:Drob_V])
+            if Drob_V != len(koren):
+                if number2 == 0:
+                    number2 = 1
+                if str(koren[Drob_V+1:]).isdigit() == True:
+                    number2 *= int(koren[Drob_V+1:])
+                else:
+                    number2 *= float(koren[Drob_V+1:])
+            if type(number) == float:
+                if str(number)[-1] == "0" and str(number)[-2] == ".":
+                    number = int(str(number)[:-2])
+            if type(number2) == float:
+                if str(number2)[-1] == "0" and str(number2)[-2] == ".":
+                    number2 = int(str(number2)[:-2])
+            if number2 == 0:
+                return f"√{number}"
             else:
-                k = "0.1"
-                i = "0.0"
-                p = 1
-            k = float(k)
-            i = float(i)
-            i += k
-            c = i*i
-            c = round(c, s)
-            while c < b:
-                i += k
-                i = round(i, p)
-                c = i*i
-                c = round(c, s+1)
-            if c == b:
-                return i
-            else:
-                cout = 0
-                for i in range(s):
-                    cout += 1
-                cout2 = cout
-                while cout != 0:
-                    b *= 10
-                    cout -= 1
-                b = int(b)
-                for i in range(1, b+1):
-                    for k in range(1, b+1):
-                        if i*k == b:
-                            if i == k:
-                                return k
-                            else:
-                                for l in range(1, k):
-                                    if l*l == k:
-                                        i = Dpl(i, s)
-                                        return i
-        def Dpl(i, h):
-            cout3 = 0
-            while cout3 != h:
-                i *= 0.1
-                cout3 += 1
-                i = round(i, cout3)
-            return i
-        def Dp(k, cout3):
-            n = 1
-            while cout3 != 0:
-                k *= 0.1
-                k = round(k, n)
-                n += 1
-                cout3 -= 1
-            return k
-        flag = True
-        fla = True
-        fl = True
-        f = True
-        NeKPL = True
-        KPL = True
-        KDR = True
-        NeKDR = True
-        query = 1
-        koren = self.lbl.text
-        a = koren.find("#")
-        for i in koren[a+1:]:
-            if i == ".":
-                KPL = False    
-        for i in koren[:a]:
-            if i ==".":
-                NeKPL = False
-        for i in koren[a+1:]:
-            if i == "/":
-                KDR = False
-        for i in koren[:a]:
-            if i == "/":
-                NeKDR = False
-        if query == 1:
-            if KPL == True and NeKPL == True and KDR == True and NeKDR == True:
-                b = int(koren[a+1:])
-                for i in range(1, b+1):
-                    if i*i == b:
-                        if koren[:a] == "":
-                            flag = False
-                            return f"{i}"
-                        elif flag == True:
-                            i *= int(koren[:a])
-                            flag = False
-                            return f"{i}"
-                if flag == True:
-                    for i in range(1, b+1):
-                        for k in range(1, b+1):
-                            if i*k == b:
-                                for l in range(1, k):
-                                    if koren[:a] == "":
-                                        if l*l == k:
-                                            flag = False
-                                            return f"{l}#{i}"
-                                    else:
-                                        if l*l == k:
-                                            l *= int(koren[:a])
-                                            flag = False
-                                            return f"{l}#{i}"
-            if KPL == True and NeKPL == False and KDR == True and NeKDR == True and flag == True:
-                b = int(koren[a+1:])
-                for i in range(1, b+1):
-                    if i*i == b:
-                        if koren[:a] == "":
-                            flag = False
-                            return "число будет", i
-                        elif flag == True:
-                            i = float(i)
-                            i *= float(koren[:a])
-                            flag = False
-                            return "число будет", i
-                if flag == True:
-                    for i in range(1, b+1):
-                        for k in range(1, b+1):
-                            if i*k == b:
-                                for l in range(1, k):
-                                    if koren[:a] == "":
-                                        if l*l == k:
-                                            flag = False
-                                            return f"{l}#{i}"
-                                    else:
-                                        if l*l == k:
-                                            l = float(l)
-                                            l *= float(koren[:a])
-                                            flag = False
-                                            return f"{l}#{i}"
-            if KPL == False and NeKPL == True and NeKDR == True and KDR == True and flag == True:
-                for i in range(a, len(koren)):
-                    if koren[i] == ".":
-                        h = i #координата точки внутри корня
-                s = h
-                h = len(koren)-1 - h
-                b = float(koren[a+1:])
-                i = str("0.")
-                k = str("0.")
-                p = int(h/2)
-                if koren[a+1:s] == "0":
-                    for l in range(1, p+1):
-                        i += "0"
-                        if l != p:
-                            k += "0"
-                        else:
-                            k += "1"
-                else:
-                    k = "0.1"
-                    i = "0.0"
-                    p = 1
-                k = float(k)
-                i = float(i)
-                i += k
-                c = i*i
-                c = round(c, h)
-                while c < b:
-                    i += k
-                    i = round(i, p)
-                    c = i*i
-                    c = round(c, h+1)
-                if c == b:
-                    if koren[:a] == "":
-                        flag = False
-                        fl = False
-                        return "число будет", i
-                    elif flag == True:
-                        flag = False
-                        fl = False
-                        i *= float(koren[:a])
-                        return "число будет", i
-                else:
-                    cout = 0
-                    for i in range(h):
-                        cout += 1
-                    cout2 = cout
-                    while cout != 0:
-                        b *= 10
-                        cout -= 1
-                    b = int(b)
-                    for i in range(1, b+1):
-                        for k in range(1, b+1):
-                            if i*k == b:
-                                if i == k:
-                                    cout3 = int(cout2/2)
-                                    k = Dp(k, cout3)
-                                    if koren[:a] == "":
-                                        flag = False
-                                        fl = False
-                                        return f"{k}#0.1"
-                                    else:
-                                        k *= int(koren[:a])
-                                        flag = False
-                                        fl = False
-                                        return f"{k}#0.1"
-                                else:
-                                    for l in range(1, k):
-                                        if l*l == k:
-                                            i = Dpl(i, h)
-                                            if koren[:a] == "":
-                                                    flag = False
-                                                    fl = False
-                                                    return f"{l}#{i}"
-                                            else:
-                                                    l = int(l)
-                                                    l *= int(koren[:a])
-                                                    flag = False
-                                                    fl = False
-                                                    return f"{l}#{i}"
-            if KPL == False and NeKPL == False and NeKDR == True and KDR == True and flag == True:
-                for i in range(a, len(koren)):
-                    if koren[i] == ".":
-                        h = i #координата точки внутри корня
-                s = h
-                h = len(koren)-1 - h
-                b = float(koren[a+1:])
-                i = str("0.")
-                k = str("0.")
-                p = int(h/2)
-                if koren[a+1:s] == "0":
-                    for l in range(1, p+1):
-                        i += "0"
-                        if l != p:
-                            k += "0"
-                        else:
-                            k += "1"
-                else:
-                    k = "0.1"
-                    i = "0.0"
-                    p = 1
-                k = float(k)
-                i = float(i)
-                i += k
-                c = i*i
-                c = round(c, h)
-                while c < b:
-                    i += 0.1
-                    i = round(i, p)
-                    c = i*i
-                    c = round(c, h+1)
-                if c == b:
-                    if koren[:a] == "":
-                        flag = False
-                        return "число будет", i
-                    elif flag == True:
-                        i *= float(koren[:a])
-                        flag = False
-                        return "число будет", i
-                else:
-                    cout = 0
-                    for i in range(h):
-                        cout += 1
-                    cout2 = cout
-                    while cout != 0:
-                        b *= 10
-                        cout -= 1
-                    b = int(b)
-                    for i in range(1, b+1):
-                        for k in range(1, b+1):
-                            if i*k == b:
-                                if i == k:
-                                    cout3 = int(cout2/2)
-                                    k = Dp(k, cout3)
-                                    if koren[:a] == "":
-                                        flag = False
-                                        return f"{k}#0.1"
-                                    else:
-                                        k *= float(koren[:a])
-                                        flag = False
-                                        return f"{k}#0.1"
-                                else:
-                                    for l in range(1, k):
-                                        if l*l == k:
-                                            i = Dpl(i, h)
-                                            if koren[:a] == "":
-                                                flag = False
-                                                return f"{l}#{i}"
-                                            else:
-                                                l = int(l)
-                                                l *= float(koren[:a])
-                                                flag = False
-                                                return f"{l}#{i}"
-            if NeKDR == False and KDR == False and KPL == True and flag == True:
-                for i in range(0, a):
-                    if koren[i] == "/":
-                        u = i #координата дроби снаружи корня
-                for i in range(a, len(koren)-1):
-                    if koren[i] == "/":
-                        d = i #координата дроби внутри корня
-                b = int(koren[a+1:d]) #числитель дроби внутри корня
-                h = int(koren[d+1:len(koren)]) #знаменатель дроби внутри корня
-                u = 0
-                j = 1
-                g = 1
-                for i in range(0, a):
-                    if koren[i] == "/":
-                        u = i #координата дроби снаружи корня
-                for i in range(0, u):
-                    if koren[i] == ".":
-                        g = 0
-                for i in range(u, a):
-                    if koren[i] == ".":
-                        j = 0
-                if g != 0 :
-                    g = int(koren[0:u]) #числитель дроби снаружи корня
-                else:
-                    g = float(koren[0:u]) #числитель дроби снаружи корня
-                if j != 0:
-                    j = int(koren[u+1:a]) #знаменатель дроби снаружи корня
-                else:
-                    j = float(koren[u+1:a]) #знаменатель дроби снаружи корня
-                if b*b * 0.1 == b:
-                    if h*h * 0.1 == h:
-                        flag = False
-                        return f"{b*g}#0.1/{h*j}#0.1"
-                    else:
-                        for i in range(1, h+1):
-                            if i*i == h:
-                                fl = False
-                                return f"{b*g}#0.1/{i*j}"
-                        if fl == True:
-                            for i in range(1, h+1):
-                                for k in range(1, h+1):
-                                    if i*k == h:
-                                        for t in range(1, k):
-                                            if t*t == k:
-                                                fl = False
-                                                return f"{b*g}/{t*j}#{i}"
-                elif h*h * 0.1 == h:
-                    for i in range(1, b+1):
-                            if i*i == b:
-                                fl = False
-                                return f"{i*g}/{h*j}#0.1"
-                    if fl == True:
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    for t in range(1, k):
-                                        if t*t == k:
-                                            fl = False
-                                            return f"{k*g}#{i}/{h*j}#0.1"
-                else:
-                    for i in range(1, b+1):
-                        if i*i == b:
-                            fl = False
-                            for k in range(1, h+1):
-                                if k*k == h:
-                                    flag = False
-                                    return f"{g*i}/{j*k}"
-                        elif i == b:
-                            for k in range(1, h+1):
-                                if k*k == h:
-                                    flag = False
-                    if fl == False and flag == True:
-                        for i in range(1, h+1):
-                            for k in range(1, h+1):
-                                if i*k == h:
-                                    for t in range(1, k):
-                                        if t*t == k:
-                                            for n in range(1, b+1):
-                                                if n*n == b:
-                                                    flag = False
-                                                    return f"{n*g}/{t*j}#{i}"
-                    if fl == True and flag == False:
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    for t in range(1, k):
-                                        if t*t == k:
-                                            for n in range(1, h+1):
-                                                if n*n == h:
-                                                    fl = False
-                                                    return f"{t*g}#{i}/{n*j}"
-                    if fl == True and flag == True:
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    for t in range(1, k):
-                                        if t*t == k:
-                                            fl = False
-                                            for n in range(1, h+1):
-                                                for s in range(1, h+1):
-                                                    if n*s == h:
-                                                        for y in range(1, s):
-                                                            if y*y == s:
-                                                                flag = False
-                                                                if fl == False:
-                                                                    return f"{t*g}#{i}/{y*j}#{n}"
-                        if flag == True:
-                            for n in range(1, h+1):
-                                for s in range(1, h+1):
-                                    if n*s == h:
-                                        for y in range(1, s):
-                                            if y*y == s:
-                                                flag = False
-                                                return f"{g*b}/{h*j}"
-                    if fl == True and flag == True:
-                        fl = False
-                        flag = False
-                        return f"{g}#{b}/{j}#{h}"
-                    if fl == True and flag == False:
-                        for i in range(1, h+1):
-                            if i*i == h:
-                                f = False
-                                return f"{g}#{b}/{i*j}"
-                        if f == True:
-                            for i in range(1, h+1):
-                                for k in range(1, h+1):
-                                    if i*k == h:
-                                        for t in range(1, k):
-                                            if t*t == k:
-                                                flag = False
-                                                return f"{g}#{b}/{t*j}#{i}"
-                    if fl == False and flag == True:
-                        for i in range(1, b+1):
-                            if i*i == b:
-                                f = False
-                                return f"{i*g}/{j}#{h}"
-                        if f == True:
-                            for i in range(1, b+1):
-                                for k in range(1, b+1):
-                                    if i*k == b:
-                                        for t in range(1, k):
-                                            if t*t == k:
-                                                flag = False
-                                                return f"{g*t}#{i}/{j}#{h}"
-            if NeKDR == False and KDR == True and KPL == True and flag == True:
-                u = 0
-                j = 1
-                g = 1
-                for i in range(0, a):
-                    if koren[i] == "/":
-                        u = i #координата дроби снаружи корня
-                for i in range(0, u):
-                    if koren[i] == ".":
-                        g = 0
-                for i in range(u, a):
-                    if koren[i] == ".":
-                        j = 0
-                if g != 0 :
-                    g = int(koren[0:u]) #числитель дроби снаружи корня
-                else:
-                    g = float(koren[0:u]) #числитель дроби снаружи корня
-                if j != 0:
-                    j = int(koren[u+1:a]) #знаменатель дроби снаружи корня
-                else:
-                    j = float(koren[u+1:a]) #знаменатель дроби снаружи корня
-                b = int(koren[a+1:]) # число в корне
-                if b*b * 0.1 == b:
-                    fl = False
-                    return f"{b*g}#0.1/{j}"
-                else:
-                    for i in range(1, b+1):
-                        if i*i == b:
-                            fl = False
-                            return f"{g*i}/{j} 1"
-                    if fl == True:
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    for t in range(1, k):
-                                        if t*t == k:
-                                            fl = False
-                                            return f"{t*g}#{i}/{j}"
-                    if fl == True:
-                        fl = False
-                        return f"{g}#{b}/{j}"
-            if NeKDR == False and KPL == False and KDR == True and flag == True:
-                u = 0
-                j = 1
-                g = 1
-                for i in range(0, a):
-                    if koren[i] == "/":
-                        u = i #координата дроби снаружи корня
-                for i in range(0, u):
-                    if koren[i] == ".":
-                        g = 0
-                for i in range(u, a):
-                    if koren[i] == ".":
-                        j = 0
-                for i in range(a, len(koren)):
-                    if koren[i] == ".":
-                        q = i #координата точки внутри корня
-                h = len(koren)-1 - q
-                if g != 0 :
-                    g = int(koren[0:u]) #числитель дроби снаружи корня
-                else:
-                    g = float(koren[0:u]) #числитель дроби снаружи корня
-                if j != 0:
-                    j = int(koren[u+1:a]) #знаменатель дроби снаружи корня
-                else:
-                    j = float(koren[u+1:a]) #знаменатель дроби снаружи корня
-                b = float(koren[a+1:]) # число в корне
-                i = str("0.")
-                k = str("0.")
-                p = int(h/2)
-                if koren[a+1:q] == "0":
-                    for l in range(1, p+1):
-                        i += "0"
-                        if l != p:
-                            k += "0"
-                        else:
-                            k += "1"
-                else:
-                    k = "0.1"
-                    i = "0.0"
-                    p = 1
-                k = float(k)
-                i = float(i)
-                i += k
-                c = i*i
-                c = round(c, h)
-                while c < b:
-                    i += k
-                    i = round(i, p)
-                    c = i*i
-                    c = round(c, h+1)
-                if c == b:
-                    flag = False
-                    fl = False
-                    return f"{i*g}/{j}"
-                else:
-                    cout = 0
-                    for i in range(h):
-                        cout += 1
-                    cout2 = cout
-                    while cout != 0:
-                        b *= 10
-                        cout -= 1
-                    b = int(b)
-                    for i in range(1, b+1):
-                        for k in range(1, b+1):
-                            if i*k == b:
-                                if i == k:
-                                    cout3 = int(cout2/2)
-                                    k = Dp(k, cout3)
-                                    flag = False
-                                    fl = False
-                                    return f"{g*k}#0.1/{j}"
-                                else:
-                                    for l in range(1, k):
-                                        if l*l == k:
-                                            i = Dpl(i, h)
-                                            if koren[:a] == "":
-                                                    cout3 = cout2
-                                                    flag = False
-                                                    fl = False
-                                                    return f"{l*g}#{i}/{j}"
-                                            else:
-                                                    l = int(l)
-                                                    flag = False
-                                                    fl = False
-                                                    return f"{l*g}#{i}/{j}"
-            if KDR == False and flag == True: # 1#1.0/1 или 1.0#1.0/1 или 1/1#1.0/1 или 1.0/1#1.0/1
-                d = 0
-                for i in range(a, len(koren)-1):
-                    if koren[i] == "/":
-                        d = i #координата дроби внутри корня
-                u = 0
-                j = 1
-                g = 1
-                y = 0
-                q = 0
-                w = 0
-                cout4 = 0
-                for i in range(0, a):
-                    if koren[i] == "/":
-                        u = i #координата дроби снаружи корня
-                for i in range(0, u):
-                    if koren[i] == ".":
-                        g = 0
-                for i in range(u, a):
-                    if koren[i] == ".":
-                        j = 0
-                if u == 0:
-                    u = a
-                if d != 0:
-                    if koren[0:a] != "":
-                        if g != 0 :
-                            g = int(koren[0:u]) #числитель дроби снаружи корня
-                            y = 0
-                        else:
-                            g = float(koren[0:u]) #числитель дроби снаружи корня
-                            y = 1
-                        if u != a:
-                            if j != 0:
-                                j = int(koren[u+1:a]) #знаменатель дроби снаружи корня
-                            else:
-                                j = float(koren[u+1:a]) #знаменатель дроби снаружи корня
-                else:
-                    if j != 0 :
-                        g = int(koren[0:u]) #числитель дроби снаружи корня
-                        y = 0
-                    else:
-                        g = float(koren[0:u]) #числитель дроби снаружи корня
-                        y = 1
-                for i in koren[a+1:d]:
-                    if i == ".":
-                        fla = False
-                for i in koren[d+1:]:
-                    if i == ".":
-                        f = False
-                if fla == False:
-                    b = float(koren[a+1:d]) #числитель дроби внутри корня
-                else:
-                    b = int(koren[a+1:d]) #числитель дроби внутри корня
-                if f == False:
-                    h = float(koren[d+1:len(koren)]) #знаменатель дроби внутри корня
-                else:
-                    h = int(koren[d+1:len(koren)]) #знаменатель дроби внутри корня
-                for i in range(a, d):
-                    if koren[i] == ".":
-                        q = i #координата точки внутри корня
-                for i in range(d+1, len(koren)):
-                    if koren[i] == ".":
-                        w = i #координата точки внутри корня
-                i = str("0.")
-                k = str("0.")
-                s = len(koren[q+1:d])
-                p = int(s/2)
-                x = 1
-                n2 = 0
-                e = b
-                if fla == False and f == True:
-                    s = len(koren[q+1:d])
-                    x = 0
-                    n = kdlT(h)
-                    if n != 0 and n*n != h:
-                        x = kdlTr(h)
-                    if koren[a+1:q] == "0":
-                        for l in range(1, p+1):
-                            i += "0"
-                            if l != p:
-                                k += "0"
-                            else:
-                                k += "1"
-                    else:
-                        k = "0.1"
-                        i = "0.0"
-                        p = 1
-                    k = float(k)
-                    i = float(i)
-                    i += k
-                    c = i*i
-                    c = round(c, s)
-                    while c < b:
-                        i += k
-                        i = round(i, p)
-                        c = i*i
-                        c = round(c, s+1)
-                        return i, c
-                    if c == b:
-                        if koren[:a] == "":
-                            if n*n == h:
-                                return f"{i}/{n}"
-                            elif n**2*x == h:
-                                return f"{i}/{n}#{x}"
-                            elif n == 0:
-                                return f"{i}/#{h}"
-                            flag = False
-                            fl = False
-                        else:
-                            if u == a:
-                                if n*n == h:
-                                    return f"{i*g}/{n}"
-                                elif n**2*x == h:
-                                    return f"{i*g}/{n}#{x}"
-                                elif n == 0:
-                                    return f"{i*g}/#{h}"
-                            else:
-                                if n*n == h:
-                                    return f"{i*g}/{n*j}"
-                                elif n**2*x == h:
-                                    return f"{i*g}/{n*j}#{x}"
-                                elif n == 0:
-                                    return f"{i*g}/{j}#{h}"
-                            flag = False
-                            fl = False
-                    else:
-                        cout = 0
-                        for i in range(s):
-                            cout += 1
-                        cout2 = cout
-                        while cout != 0:
-                            b *= 10
-                            cout -= 1
-                        b = int(b)
-                        if cout2 != 1:
-                            cout4 = int(cout2/2)
-                        else:
-                            cout4 = 1
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    if i == k:
-                                        cout3 = int(cout2/2)
-                                        while cout3 != 0:
-                                            k *= 0.1
-                                            cout3 -= 1
-                                        if koren[:a] == "":
-                                            if n*n == h:
-                                                return f"{k}#0.1/{n}"
-                                            elif n**2*x == h:
-                                                return f"{k}#0.1/{n}#{x}"
-                                            elif n == 0:
-                                                return f"{k}#0.1/#{h}"
-                                            flag = False
-                                            fl = False
-                                        else:
-                                            if u == a:
-                                                if n*n == h:
-                                                    return f"{g*k}#0.1/{n}"
-                                                elif n**2*x == h:
-                                                    return f"{g*k}#0.1/{n}#{x}"
-                                                elif n == 0:
-                                                    return f"{g*k}#0.1/#{h}"
-                                            else:
-                                                if n*n == h:
-                                                    return f"{g*k}#0.1/{n*j}"
-                                                elif n**2*x == h:
-                                                    return f"{g*k}#0.1/{n*j}#{x}"
-                                                elif n == 0:
-                                                    return f"{g*k}#0.1/{j}#{h}"
-                                            flag = False
-                                            fl = False
-                                    else:
-                                        for l in range(1, k):
-                                            if koren[:a] == "":
-                                                if l*l == k:
-                                                    cout3 = cout2
-                                                    while cout3 != 0:
-                                                        i /= 10
-                                                        cout3 -= 1
-                                                    if n*n == h:
-                                                        return f"{l}#{i}/{n}"
-                                                    elif n**2*x == h:
-                                                        return f"{l}#{i}/{n}#{x}"
-                                                    elif n == 0:
-                                                        return f"{l}#{i}/#{h}"
-                                                    flag = False
-                                                    fl = False
-                                            else:
-                                                if l*l == k:
-                                                    l = int(l)
-                                                    cout3 = cout2
-                                                    while cout3 != 0:
-                                                        i /= 10
-                                                        cout3 -= 1
-                                                    if u == a:
-                                                        if n*n == h:
-                                                            return f"{g*l}#{i}/{n}"
-                                                        elif n**2*x == h:
-                                                            return f"{g*l}#{i}/{n}#{x}"
-                                                        elif n == 0:
-                                                            return f"{g*l}#{i}/#{h}"
-                                                    else:
-                                                        if n*n == h:
-                                                            return f"{g*l}#{i}/{n*j}"
-                                                        elif n**2*x == h:
-                                                            return f"{g*l}#{i}/{n*j}#{x}"
-                                                        elif n == 0:
-                                                            return f"{g*l}#{i}/{j}#{h}"
-                                                    flag = False
-                                                    fl = False
-                    if flag == True and fl == True:
-                        while cout4 != 0:
-                            b /= 10
-                            cout4 -= 1
-                        if u == a:
-                            if n*n == h:
-                                return f"#{b}/{n}"
-                            elif n**2*x == h:
-                                return f"#{b}/{n}#{x}"
-                            elif n == 0:
-                                return f"#{b}/#{h}"
-                        else:
-                            if n*n == h:
-                                return f"{g}#{b}/{n*j}"
-                            elif n**2*x == h:
-                                return f"{g}#{b}/{n*j}#{x}"
-                            elif n == 0:
-                                return f"{g}#{b}/{j}#{h}"
-                        flag = False
-                        fl = False
-                if fla == False and f == False:
-                    s = len(koren[q+1:d])
-                    x = 0
-                    n = kdlF(h, koren[d+1:w], s)
-                    if n != 0 and n*n != h:
-                        x = kdlFl(h, koren[d+1:w], s)
-                    n2 = float(n**2)
-                    for z in range(1, s+1):
-                        n2 *= 0.1
-                        n2 = round(n2, z)
-                    if koren[a+1:q] == "0":
-                        for l in range(1, p+1):
-                            i += "0"
-                            if l != p:
-                                k += "0"
-                            else:
-                                k += "1"
-                    else:
-                        k = "0.1"
-                        i = "0.0"
-                        p = 1
-                    k = float(k)
-                    i = float(i)
-                    i += k
-                    c = i*i
-                    c = round(c, s)
-                    while c < b:
-                        i += k
-                        i = round(i, p)
-                        c = i*i
-                        c = round(c, s+1)
-                    if c == b:
-                        if koren[:a] == "":
-                            if n*n == h:
-                                return f"{i}/{n}"
-                            elif n**2*x == h:
-                                return f"{i}/{n}#{x}"
-                            elif n2 == h:
-                                return f"{i}/{n}#{x}"
-                            elif n == 0:
-                                return f"{i}/#{h}"
-                            flag = False
-                            fl = False
-                        elif flag == True:
-                            if u == a:
-                                if n*n == h:
-                                    return f"{i*g}/{n}"
-                                elif n**2*x == h:
-                                    return f"{i*g}/{n}#{x}"
-                                elif n2 == h:
-                                    return f"{i*g}/{n}#{x}"
-                                elif n == 0:
-                                    return f"{i*g}/#{h}"
-                            else:
-                                if n*n == h:
-                                    return f"{i*g}/{n*j}"
-                                elif n**2*x == h:
-                                    return f"{i*g}/{n*j}#{x}"
-                                elif n2 == h:
-                                    return f"{i*g}/{n*j}#{x}"
-                                elif n == 0:
-                                    return f"{i*g}/{j}#{h}"
-                            flag = False
-                            fl = False
-                    else:
-                        s = len(koren[q+1:d])
-                        cout = 0
-                        for i in range(s):
-                            cout += 1
-                        cout2 = cout
-                        while cout != 0:
-                            b *= 10
-                            cout -= 1
-                        b = int(b)
-                        if cout2 != 1:
-                            cout4 = int(cout2/2)
-                        else:
-                            cout4 = 1
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    if i == k:
-                                        cout3 = int(cout2/2)
-                                        k = Dp(k, cout3)
-                                        if koren[:a] == "":
-                                            if n*n == h:
-                                                return f"{k}#0.1/{n}"
-                                            elif n**2*x == h:
-                                                return f"{k}#0.1/{n}#{x}"
-                                            elif n2 == h:
-                                                return f"{k}#0.1/{n}#{x}"
-                                            elif n == 0:
-                                                return f"{k}#0.1/#{h}"
-                                            flag = False
-                                            fl = False
-                                        else:
-                                            if u == a:
-                                                if n*n == h:
-                                                    return f"{g*k}#0.1/{n}"
-                                                elif n**2*x == h:
-                                                    return f"{g*k}#0.1/{n}#{x}"
-                                                elif n2 == h:
-                                                    return f"{g*k}#0.1/{n}#{x}"
-                                                elif n == 0:
-                                                    return f"{g*k}#0.1/#{h}"
-                                            else:
-                                                if n*n == h:
-                                                    return f"{g*k}#0.1/{n*j}"
-                                                elif n**2*x == h:
-                                                    return f"{g*k}#0.1/{n*j}#{x}"
-                                                elif n2 == h:
-                                                    return f"{g*k}#0.1/{n*j}#{x}"
-                                                elif n == 0:
-                                                    return f"{g*k}#0.1/{j}#{h}"
-                                            flag = False
-                                            fl = False
-                                    else:
-                                        for l in range(1, k):
-                                            if koren[:a] == "":
-                                                if l*l == k:
-                                                    cout3 = cout2
-                                                    i = Dpl(i, len(koren[q+1:d]))
-                                                    if u == a:
-                                                        if n*n == h:
-                                                            return f"{l*g}#{i}/{n}"
-                                                        elif n**2*x == h:
-                                                            return f"{l*g}#{i}/{n}#{x}"
-                                                        elif n2 == h:
-                                                            return f"{l*g}#{i}/{n}#{x}"
-                                                        elif n == 0:
-                                                            return f"{l*g}#{i}/#{h}"
-                                                    else:
-                                                        if n*n == h:
-                                                            return f"{l*g}#{i}/{n*j}"
-                                                        elif n**2*x == h:
-                                                            return f"{l*g}#{i}/{n*j}#{x}"
-                                                        elif n2 == h:
-                                                            return f"{l*g}#{i}/{n*j}#{x}"
-                                                        elif n == 0:
-                                                            return f"{l*g}#{i}/{j}#{h}"
-                                                    flag = False
-                                                    fl = False
-                                            else:
-                                                if l*l == k:
-                                                    l = int(l)
-                                                    cout3 = cout2
-                                                    i = Dpl(i, len(koren[q+1:d]))
-                                                    if u == a:
-                                                        if n*n == h:
-                                                            return f"{g*l}#{i}/{n}"
-                                                        elif n**2*x == h:
-                                                            return f"{g*l}#{i}/{n}#{x}"
-                                                        elif n2 == h:
-                                                            return f"{g*l}#{i}/{n}#{x}"
-                                                        elif n == 0:
-                                                            return f"{g*l}#{i}/#{h}"
-                                                    else:
-                                                        if n*n == h:
-                                                            return f"{l*g}#{i}/{n*j}"
-                                                        elif n**2*x == h:
-                                                            return f"{l*g}#{i}/{n*j}#{x}"
-                                                        elif n2 == h:
-                                                            return f"{l*g}#{i}/{n*j}#{x}"
-                                                        elif n == 0:
-                                                            return f"{l*g}#{i}/{j}#{h}"
-                                                    flag = False
-                                                    fl = False
-                if fla == True and f == False:
-                    s = len(koren)-1 - w
-                    x = 0
-                    n = kdlF(h, koren[d+1:w], s)
-                    if n != 0 and n*n != h:
-                        x = kdlFl(h, koren[d+1:w], s)
-                    n2 = float(n**2)
-                    for i in range(1, s+1):
-                        n2 *= 0.1
-                        n2 = round(n2, i)
-                    for i in range(1, b+1):
-                        if i*i == b:
-                            if koren[:a] == "":
-                                if n*n == h:
-                                    return f"{i}/{n}"
-                                elif n**2*x == h:
-                                    return f"{i}/{n}#{x}"
-                                elif n2 == h:
-                                    return f"{i}/{n}#{x}"
-                                elif n == 0:
-                                    return f"{i}/#{h}"
-                                flag = False
-                            elif flag == True:
-                                if u != a:
-                                    if n*n == h:
-                                        return f"{g*i}/{n*j}"
-                                    elif n**2*x == h:
-                                        return f"{g*i}/{n*j}#{x}"
-                                    elif n2 == h:
-                                        return f"{g*i}/{n*j}#{x}"
-                                    elif n == 0:
-                                        return f"{g*i}/{j}#{h}"
-                                else:
-                                    if n*n == h:
-                                        return f"{g*i}/{n}"
-                                    elif n**2*x == h:
-                                        return f"{g*i}/{n}#{x}"
-                                    elif n2 == h:
-                                        return f"{g*i}/{n}#{x}"
-                                    elif n == 0:
-                                        return f"{g*i}/#{h}"
-                                flag = False
-                    if flag == True:
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    for l in range(1, k):
-                                        if koren[:a] == "":
-                                            if l*l == k:
-                                                if u != a:
-                                                    if n*n == h:
-                                                        return f"{l}#{i}/{n*j}"
-                                                    elif n**2*x == h:
-                                                        return f"{l}#{i}/{n*j}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{l}#{i}/{n*j}#{x}"
-                                                    elif n == 0:
-                                                        return f"{l}#{i}/{j}#{h}"
-                                                else:
-                                                    if n*n == h:
-                                                        return f"{l}#{i}/{n}"
-                                                    elif n**2*x == h:
-                                                        return f"{l}#{i}/{n}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{l}#{i}/{n}#{x}"
-                                                    elif n == 0:
-                                                        return f"{l}#{i}/#{h}"
-                                                flag = False
-                                        else:
-                                            if l*l == k:
-                                                if u != a:
-                                                    if n*n == h:
-                                                        return f"{g*l}#{i}/{n*j}"
-                                                    elif n**2*x == h:
-                                                        return f"{g*l}#{i}/{n*j}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{g*l}#{i}/{n*j}#{x}"
-                                                    elif n == 0:
-                                                        return f"{g*l}#{i}/{j}#{h}"
-                                                else:
-                                                    if n*n == h:
-                                                        return f"{g*l}#{i}/{n}"
-                                                    elif n**2*x == h:
-                                                        return f"{g*l}#{i}/{n}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{g*l}#{i}/{n}#{x}"
-                                                    elif n == 0:
-                                                        return f"{g*l}#{i}/#{h}"
-                                                flag = False
-                if fla == True and f == True:
-                    n = kdlT(h)
-                    if n != 0 and n*n != h:
-                        x = kdlTr(h)
-                    for i in range(1, b+1):
-                        if i*i == b:
-                            if koren[:a] == "":
-                                if n*n == h:
-                                    return f"{i}/{n}"
-                                elif n**2*x == h:
-                                    return f"{i}/{n}#{x}"
-                                elif n2 == h:
-                                    return f"{i}/{n}#{x}"
-                                elif n == 0:
-                                    return f"{i}/#{h}"
-                                flag = False
-                            elif flag == True:
-                                if u != a:
-                                    if n*n == h:
-                                        return f"{g*i}/{n*j}"
-                                    elif n**2*x == h:
-                                        return f"{g*i}/{n*j}#{x}"
-                                    elif n2 == h:
-                                        return f"{g*i}/{n*j}#{x}"
-                                    elif n == 0:
-                                        return f"{g*i}/{j}#{h}"
-                                else:
-                                    if n*n == h:
-                                        return f"{g*i}/{n}"
-                                    elif n**2*x == h:
-                                        return f"{g*i}/{n}#{x}"
-                                    elif n2 == h:
-                                        return f"{g*i}/{n}#{x}"
-                                    elif n == 0:
-                                        return f"{g*i}/#{h}"
-                                flag = False
-                    if flag == True:
-                        for i in range(1, b+1):
-                            for k in range(1, b+1):
-                                if i*k == b:
-                                    for l in range(1, k):
-                                        if koren[:a] == "":
-                                            if l*l == k:
-                                                if u != a:
-                                                    if n*n == h:
-                                                        return f"{l}#{i}/{n*j}"
-                                                    elif n**2*x == h:
-                                                        return f"{l}#{i}/{n*j}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{l}#{i}/{n*j}#{x}"
-                                                    elif n == 0:
-                                                        return f"{l}#{i}/{j}#{h}"
-                                                else:
-                                                    if n*n == h:
-                                                        return f"{l}#{i}/{n}"
-                                                    elif n**2*x == h:
-                                                        return f"{l}#{i}/{n}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{l}#{i}/{n}#{x}"
-                                                    elif n == 0:
-                                                        return f"{l}#{i}/#{h}"
-                                                flag = False
-                                        else:
-                                            if l*l == k:
-                                                if u != a:
-                                                    if n*n == h:
-                                                        return f"{g*l}#{i}/{n*j}"
-                                                    elif n**2*x == h:
-                                                        return f"{g*l}#{i}/{n*j}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{g*l}#{i}/{n*j}#{x}"
-                                                    elif n == 0:
-                                                        return f"{g*l}#{i}/{j}#{h}"
-                                                else:
-                                                    if n*n == h:
-                                                        return f"{g*l}#{i}/{n}"
-                                                    elif n**2*x == h:
-                                                        return f"{g*l}#{i}/{n}#{x}"
-                                                    elif n2 == h:
-                                                        return f"{g*l}#{i}/{n}#{x}"
-                                                    elif n == 0:
-                                                        return f"{g*l}#{i}/#{h}"
-                                                flag = False
-                if flag == True and fl == True:
-                        b = e
-                        while cout4 != 0:
-                            b /= 10
-                            cout4 -= 1
-                        if u == a:
-                            if n*n == h:
-                                return f"#{b}/{n}"
-                            elif n**2*x == h:
-                                return f"#{b}/{n}#{x}"
-                            elif n == 0:
-                                return f"#{b}/#{h}"
-                        else:
-                            if n*n == h:
-                                return f"{g}#{b}/{n*j}"
-                            elif n**2*x == h:
-                                return f"{g}#{b}/{n*j}#{x}"
-                            elif n == 0:
-                                return f"{g}#{b}/{j}#{h}"
-                        flag = False
-                        fl = False
-
-            if flag == True and fl == True:
-                    return f"Число {koren} нельзя вынести!"
-            
-
-
+                return f"√{number}/{number2}"
 
 if __name__ == "__main__":
     MainApp().run()
