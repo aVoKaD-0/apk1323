@@ -158,7 +158,8 @@ class MainApp(App):
 
         return bl
 
-    def VynosIzPodKoren(koren): #внос их под корня
+    def VynosIzPodKoren(self): #внос их под корня
+        koren = self.lbl.text
         c = 0 # проверка правильно ли стоит знак корня в строке
         f = 0 # проверка правильно ли стоит знак деления
         g = 0 # проверка правильно ли стоят числа с плавающей запятой
@@ -305,13 +306,14 @@ class MainApp(App):
                         elif number2 != 0 and number4 != 0: # если число расскладывается нацело и знаменатель расскадывается не нацело
                             return f"{numerator}√{number2}/{denominator}√{number4}"
     
-    def VnosPodKoren(koren):
+    def VnosPodKoren(self):
         c = 0
         f = 0
         g = 0
         f2 = 0
         g2 = 0
         c2 = 0
+        koren = self.lbl.text
         for i in range(0, len(koren)-1):
             if koren[i] == "√":
                 c += 1
@@ -351,16 +353,16 @@ class MainApp(App):
                     number2 = int(koren[Drob_Ne+1:a])**2
                 else:
                     number2 = float(koren[Drob_Ne+1:a])**2
-            if str(koren[a+1:Drob_V]).isdigit() == True:
+            if str(koren[a+1:Drob_V]).isdigit() == True and len(koren[a+1:Drob_V]) != 0:
                 number *= int(koren[a+1:Drob_V])
-            else:
+            elif str(koren[a+1:Drob_V]).isdigit() != True and len(koren[a+1:Drob_V]) != 0:
                 number *= float(koren[a+1:Drob_V])
             if Drob_V != len(koren):
                 if number2 == 0:
                     number2 = 1
-                if str(koren[Drob_V+1:]).isdigit() == True:
+                if str(koren[Drob_V+1:]).isdigit() == True and len(koren[Drob_V+1:]) != 0:
                     number2 *= int(koren[Drob_V+1:])
-                else:
+                elif str(koren[Drob_V+1:]).isdigit() != True and len(koren[Drob_V+1:]) != 0:
                     number2 *= float(koren[Drob_V+1:])
             if type(number) == float:
                 if str(number)[-1] == "0" and str(number)[-2] == ".":
